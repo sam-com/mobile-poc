@@ -1,5 +1,6 @@
 import { useIonViewWillEnter, useIonViewWillLeave } from "@ionic/react";
 import QrScanner from "qr-scanner";
+import { Html5QrcodeScanner } from "html5-qrcode";
 import { RefObject, useRef } from "react";
 
 interface QrScannerProps {
@@ -13,39 +14,38 @@ function onDecodeError(error: Error | string): void {
 }
 
 const defaultQrScannerOptions = {
-  maxScansPerSecond: 2,
-  onDecodeError,
-  highlightScanRegion: true,
-  highlightCodeOutline: true,
+  fps: 10,
+  supportedScanTypes: [0],
+  qrbox: { width: 250, height: 250 },
 };
 
 function initializeScanner(
-  video: HTMLVideoElement,
+  video: HTMLDivElement,
   onResultFound: QrScannerProps["onCodeFound"]
-): QrScanner {
-  const scanner = new QrScanner(
-    video,
-    (result) => onResultFound(result.data),
-    defaultQrScannerOptions
+): Html5QrcodeScanner {
+  const scanner = new Html5QrcodeScanner(
+    "video",
+    defaultQrScannerOptions,
+    false
   );
 
-  scanner.start();
+  scanner.render(onResultFound, onDecodeError);
   return scanner;
 }
 
 function useScanner(
-  videoRef: RefObject<HTMLVideoElement>,
+  cameraRef: RefObject<HTMLDivElement>,
   onCodeFound: QrScannerProps["onCodeFound"]
 ) {
-  const scannerRef = useRef<QrScanner>();
+  const scannerRef = useRef<Html5QrcodeScanner>();
 
   const initializeOrRestartScanner = () => {
-    if (!videoRef.current) return;
+    if (!cameraRef.current) return;
 
     if (scannerRef.current) {
-      scannerRef.current.start();
+      scannerRef.current.resume();
     } else {
-      scannerRef.current = initializeScanner(videoRef.current, onCodeFound);
+      scannerRef.current = initializeScanner(cameraRef.current, onCodeFound);
     }
   };
 
@@ -54,8 +54,10 @@ function useScanner(
 }
 
 export function QRScanner({ onCodeFound }: QrScannerProps) {
-  const videoRef = useRef<HTMLVideoElement>(null);
-  useScanner(videoRef, onCodeFound);
+  const cameraRef = useRef<HTMLDivElement>(null);
+  useScanner(cameraRef, onCodeFound);
 
-  return <video ref={videoRef} className="rounded-md max-w-2xl m-auto" />;
+  return (
+    <div id="video" ref={cameraRef} className="rounded-md max-w-2xl m-auto" />
+  );
 }
