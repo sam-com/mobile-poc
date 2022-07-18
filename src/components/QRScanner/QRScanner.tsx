@@ -1,7 +1,7 @@
 import { useIonViewWillEnter, useIonViewWillLeave } from "@ionic/react";
 import QrScanner from "qr-scanner";
 import { Html5QrcodeScanner } from "html5-qrcode";
-import { RefObject, useRef } from "react";
+import { useRef } from "react";
 
 interface QrScannerProps {
   onCodeFound: (code: QrScanner.ScanResult["data"]) => void;
@@ -20,11 +20,10 @@ const defaultQrScannerOptions = {
 };
 
 function initializeScanner(
-  video: HTMLDivElement,
   onResultFound: QrScannerProps["onCodeFound"]
 ): Html5QrcodeScanner {
   const scanner = new Html5QrcodeScanner(
-    "video",
+    "camera",
     defaultQrScannerOptions,
     false
   );
@@ -33,19 +32,14 @@ function initializeScanner(
   return scanner;
 }
 
-function useScanner(
-  cameraRef: RefObject<HTMLDivElement>,
-  onCodeFound: QrScannerProps["onCodeFound"]
-) {
+function useScanner(onCodeFound: QrScannerProps["onCodeFound"]) {
   const scannerRef = useRef<Html5QrcodeScanner>();
 
   const initializeOrRestartScanner = () => {
-    if (!cameraRef.current) return;
-
     if (scannerRef.current) {
       scannerRef.current.resume();
     } else {
-      scannerRef.current = initializeScanner(cameraRef.current, onCodeFound);
+      scannerRef.current = initializeScanner(onCodeFound);
     }
   };
 
@@ -54,10 +48,7 @@ function useScanner(
 }
 
 export function QRScanner({ onCodeFound }: QrScannerProps) {
-  const cameraRef = useRef<HTMLDivElement>(null);
-  useScanner(cameraRef, onCodeFound);
+  useScanner(onCodeFound);
 
-  return (
-    <div id="video" ref={cameraRef} className="rounded-md max-w-2xl m-auto" />
-  );
+  return <div id="camera" className="rounded-md max-w-2xl m-auto" />;
 }
